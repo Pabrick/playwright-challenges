@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 test('Login multiple times sucessfully @c1', async ({ page }) => {
   await page.goto('/');
   await page.locator(`//*[@href='/challenge1.html']`).click();
-  // Login multiple times
+
   for (let i = 1; i <= 3; i++) {
     await page.locator('#email').fill(`test${i}@example.com`);
     await page.locator('#password').fill(`password${i}`);
@@ -15,11 +15,7 @@ test('Login multiple times sucessfully @c1', async ({ page }) => {
     await expect(successMessage).toContainText('Successfully submitted!');
     await expect(successMessage).toContainText(`Email: test${i}@example.com`);
     await expect(successMessage).toContainText(`Password: password${i}`);
-
-    await page.waitForFunction(() => {
-      const successMessageElem = document.querySelector('#successMessage');
-      return successMessageElem && !successMessageElem.classList.contains('show');
-    });
+    await expect(successMessage).toBeHidden();
   }
 });
 
@@ -34,13 +30,12 @@ test('Login animated form and logout sucessfully @c2', async ({ page }) => {
   await submitButton.screenshot({ animations: 'disabled' });
   await submitButton.click();
 
-  await page.waitForFunction(() => {
-    const menuButtonElem = document.querySelector('#menuButton');
-    return menuButtonElem && menuButtonElem.getAttribute('data-initialized') === 'true';
-  });
+  const menuButton = page.locator('#menuButton[data-initialized="true"]');
+  await expect(menuButton).toBeVisible();
+  await menuButton.click();
 
-  await page.locator('#menuButton').click();
   await page.locator('#logoutOption').click();
+  await expect(page.locator('#loginForm')).toBeVisible();
 });
 
 // Fix the Forgot password test and add proper assertions
@@ -58,7 +53,7 @@ test('Forgot password @c3', async ({ page }) => {
   await expect(page.locator('#mainContent')).toContainText('Password reset link sent!');
 });
 
-//Fix the login test. Hint: There is a global variable that you can use to check if the app is in ready state
+// //Fix the login test. Hint: There is a global variable that you can use to check if the app is in ready state
 declare global {
   interface Window {
     isAppReady: boolean;
@@ -79,19 +74,14 @@ test('Login and logout @c4', async ({ page }) => {
   await page.locator('#password').fill('password');
   await page.locator('#submitButton').click();
 
+  await expect(page.locator('#profileButton')).toBeVisible();
   await page.locator('#profileButton').click();
 
-  // This doesn't work on chromeheadless
-  // await page.waitForFunction(() => {
-  //   const profileMenuElem = document.querySelector('#profileMenu');
-  //   return profileMenuElem && profileMenuElem.classList.contains('show');
-  // });
-
-  // so I come with the solution of force the showing of the menu
   await page.evaluate(() => {
     window.isMenuOpen = true;
     document.querySelector('#profileMenu')?.classList.add('show');
   });
 
-  await page.getByText('Logout').click();
+  await page.locator('#logoutOption').click();
+  await expect(page.locator('#loginForm')).toBeVisible();
 });
